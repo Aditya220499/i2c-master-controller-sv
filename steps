@@ -1,0 +1,135 @@
+STAGE 1 — PROJECT FOUNDATION
+STEP 1
+
+Create GitHub repo.
+
+STEP 2
+
+Create folder structure.
+
+STEP 3
+
+Create README.
+
+Include:
+
+project goal
+architecture
+supported features
+STEP 4
+
+Create architecture diagram.
+
+NO RTL YET.
+
+This is important.
+
+STAGE 2 — UNDERSTAND ELECTRICAL BEHAVIOR
+STEP 5
+
+Build open-drain testbench model.
+
+ONLY:
+
+SDA behavior
+pull-up behavior
+release behavior
+
+Nothing else.
+
+This develops real intuition.
+
+STEP 6
+
+Simulate:
+
+master LOW
+slave LOW
+released line
+
+Study waveform deeply.
+
+STAGE 3 — TIMING FOUNDATION
+STEP 7
+
+Build clock enable generator.
+
+Goal:
+generate timing pulses.
+
+STEP 8
+
+Build phase engine.
+
+Generates:
+
+SCL LOW phase
+SCL HIGH phase
+sample phase
+STAGE 4 — BUS CONTROL
+STEP 9
+
+Build SDA/SCL controller.
+
+Handles:
+
+pull LOW
+release HIGH
+STEP 10
+
+Generate START condition.
+
+Verify waveform.
+
+STEP 11
+
+Generate STOP condition.
+
+STAGE 5 — BIT TRANSFER
+STEP 12
+
+Build serializer.
+
+STEP 13
+
+Send single bit correctly.
+
+STEP 14
+
+Send full byte.
+
+STEP 15
+
+ACK handling.
+
+VERY important.
+
+STAGE 6 — MAIN TRANSACTION ENGINE
+STEP 16
+
+Build main FSM.
+
+Controls:
+
+START
+address
+data
+ACK
+STOP
+STAGE 7 — ADVANCED FEATURES
+STEP 17
+
+Clock stretching.
+
+STEP 18
+
+Arbitration detection.
+
+STAGE 8 — VERIFICATION IMPROVEMENT
+STEP 19
+
+Assertions.
+
+STEP 20
+
+Self-checking testbench.
