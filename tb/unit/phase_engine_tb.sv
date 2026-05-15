@@ -1,160 +1,93 @@
 `timescale 1ns/1ps
 
-module phase_engine (
+module phase_engine_tb;
 
-    input  logic clk,
-    input  logic rst_n,
+    logic clk;
+    logic rst_n;
 
-    // ============================================================
-    // TICK INPUT
-    //
-    // Phase advances ONLY when tick arrives.
-    // Tick comes from clock_enable_gen.
-    // ============================================================
+    logic tick;
 
-    input  logic tick,
+    logic scl_low_phase;
+    logic scl_high_phase;
+    logic sample_phase;
 
-    // ============================================================
-    // PHASE OUTPUTS
-    // ============================================================
-
-    output logic scl_low_phase,
-    output logic scl_high_phase,
-    output logic sample_phase,
+    logic scl_internal;
 
     // ============================================================
-    // GENERATED SCL STATE
+    // DUT
     // ============================================================
 
-    output logic scl_internal
-);
+    phase_engine dut (
+
+        .clk            (clk),
+        .rst_n          (rst_n),
+        .tick           (tick),
+
+        .scl_low_phase  (scl_low_phase),
+        .scl_high_phase (scl_high_phase),
+        .sample_phase   (sample_phase),
+
+        .scl_internal   (scl_internal)
+
+    );
 
     // ============================================================
-    // PHASE STATE MACHINE
+    // CLOCK
     // ============================================================
 
-    typedef enum logic [1:0] {
+    initial begin
 
-        PHASE_SCL_LOW,
-        PHASE_SCL_HIGH,
-        PHASE_SAMPLE
+        clk = 0;
 
-    } phase_t;
+        forever #5 clk = ~clk;
 
-    phase_t current_phase;
+    end
 
     // ============================================================
-    // PHASE TRANSITIONS
+    // RESET
     // ============================================================
 
-    always_ff @(posedge clk or negedge rst_n) begin
+    initial begin
 
-        if (!rst_n) begin
+        rst_n = 0;
 
-            current_phase <= PHASE_SCL_LOW;
+        #20;
 
-        end
-        else begin
+        rst_n = 1;
 
-            if (tick) begin
+    end
 
-                case (current_phase)
+    // ============================================================
+    // TICK GENERATION
+    // ============================================================
 
-                    // ============================================
-                    // LOW -> HIGH
-                    // ============================================
+    initial begin
 
-                    PHASE_SCL_LOW:
-                        current_phase <= PHASE_SCL_HIGH;
+        tick = 0;
 
-                    // ============================================
-                    // HIGH -> SAMPLE
-                    // ============================================
+        forever begin
 
-                    PHASE_SCL_HIGH:
-                        current_phase <= PHASE_SAMPLE;
+            #40;
 
-                    // ============================================
-                    // SAMPLE -> LOW
-                    // ============================================
+            tick = 1;
 
-                    PHASE_SAMPLE:
-                        current_phase <= PHASE_SCL_LOW;
+            #10;
 
-                    default:
-                        current_phase <= PHASE_SCL_LOW;
+            tick = 0;
 
-                endcase
-            end
         end
     end
 
     // ============================================================
-    // PHASE OUTPUT DECODING
+    // SIMULATION CONTROL
     // ============================================================
 
-    always_comb begin
+    initial begin
 
-        // Default outputs
+        #500;
 
-        scl_low_phase  = 1'b0;
-        scl_high_phase = 1'b0;
-        sample_phase   = 1'b0;
+        $finish;
 
-        scl_internal   = 1'b0;
-
-        case (current_phase)
-
-            // ====================================================
-            // SCL LOW PHASE
-            //
-            // SDA allowed to change here.
-            // ====================================================
-
-            PHASE_SCL_LOW: begin
-
-                scl_low_phase = 1'b1;
-
-                scl_internal = 1'b0;
-
-            end
-
-            // ====================================================
-            // SCL HIGH PHASE
-            //
-            // SDA must remain stable.
-            // ====================================================
-
-            PHASE_SCL_HIGH: begin
-
-                scl_high_phase = 1'b1;
-
-                scl_internal = 1'b1;
-
-            end
-
-            // ====================================================
-            // SAMPLE PHASE
-            //
-            // Sampling performed here.
-            // ====================================================
-
-            PHASE_SAMPLE: begin
-
-                sample_phase = 1'b1;
-
-                scl_internal = 1'b1;
-
-            end
-
-            default: begin
-
-                scl_low_phase = 1'b1;
-
-                scl_internal = 1'b0;
-
-            end
-        endcase
     end
 
 endmodule
