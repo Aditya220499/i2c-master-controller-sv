@@ -1,137 +1,142 @@
 `timescale 1ns/1ps
 
-module phase_engine_tb;
+module phase_engine (
+
+    input  logic clk,
+    input  logic rst_n,
 
     // ============================================================
-    // CLOCK / RESET
+    // TICK INPUT
+    // ------------------------------------------------------------
+    // Timing advances only on tick pulse
     // ============================================================
 
-    logic clk;
-    logic rst_n;
+    input  logic tick,
 
     // ============================================================
-    // TICK
+    // OUTPUTS
     // ============================================================
 
-    logic tick;
+    output logic scl_internal,
+
+    output logic scl_low_phase,
+    output logic scl_high_phase,
 
     // ============================================================
-    // DUT OUTPUTS
+    // EVENT PULSES
+    // ------------------------------------------------------------
+    // These are INTERNAL timing events
     // ============================================================
 
-    logic scl_internal;
-
-    logic scl_low_phase;
-    logic scl_high_phase;
-
-    logic sample_pulse;
-
-    logic [2:0] debug_subphase;
+    output logic sample_pulse,
 
     // ============================================================
-    // DUT
+    // DEBUG
     // ============================================================
 
-    phase_engine dut (
+    output logic [2:0] debug_subphase
 
-        .clk             (clk),
-        .rst_n           (rst_n),
-
-        .tick            (tick),
-
-        .scl_internal    (scl_internal),
-
-        .scl_low_phase   (scl_low_phase),
-        .scl_high_phase  (scl_high_phase),
-
-        .sample_pulse    (sample_pulse),
-
-        .debug_subphase  (debug_subphase)
-
-    );
+);
 
     // ============================================================
-    // CLOCK GENERATION
+    // SUBPHASE COUNTER
+    //
+    // Timing sequence:
+    //
+    // 0 -> LOW begin
+    // 1 -> LOW hold
+    // 2 -> HIGH begin
+    // 3 -> SAMPLE point
+    // 4 -> HIGH hold
+    // 5 -> return LOW
     // ============================================================
 
-    initial begin
+    logic [2:0] subphase;
 
-        clk = 0;
+    // ============================================================
+    // SUBPHASE ADVANCEMENT
+    // ============================================================
 
-        forever #5 clk = ~clk;
+    always_ff @(posedge clk or negedge rst_n) begin
 
+        if (!rst_n) begin
+
+            subphase <= 3'd0;
+
+        end
+        else begin
+
+            if (tick) begin
+
+                if (subphase == 3'd5)
+                    subphase <= 3'd0;
+                else
+                    subphase <= subphase + 1'b1;
+
+            end
+        end
     end
 
     // ============================================================
-    // RESET
+    // OUTPUT GENERATION
     // ============================================================
 
-    initial begin
+    always_comb begin
 
-        rst_n = 0;
+        // ========================================================
+        // DEFAULTS
+        // ========================================================
 
-        #20;
+        scl_internal   = 1'b0;
 
-        rst_n = 1;
+        scl_low_phase  = 1'b0;
+        scl_high_phase = 1'b0;
 
-    end
+        sample_pulse   = 1'b0;
 
-    // ============================================================
-    // SYNCHRONOUS TICK GENERATION
-    // ============================================================
+        // ========================================================
+        // LOW REGION
+        // ========================================================
 
-    initial begin
+        if (subphase == 3'd0 ||
+            subphase == 3'd1 ||
+            subphase == 3'd5) begin
 
-        tick = 0;
+            scl_internal  = 1'b0;
 
-        wait(rst_n);
+            scl_low_phase = 1'b1;
 
-        forever begin
+        end
 
-            repeat(4) @(posedge clk);
+        // ========================================================
+        // HIGH REGION
+        // ========================================================
 
-            tick <= 1'b1;
+        else begin
 
-            @(posedge clk);
+            scl_internal   = 1'b1;
 
-            tick <= 1'b0;
+            scl_high_phase = 1'b1;
+
+        end
+
+        // ========================================================
+        // SAMPLE EVENT
+        // --------------------------------------------------------
+        // SAMPLE occurs INSIDE HIGH region
+        // ========================================================
+
+        if (subphase == 3'd3) begin
+
+            sample_pulse = 1'b1;
 
         end
     end
 
     // ============================================================
-    // DEBUG MONITOR
+    // DEBUG
     // ============================================================
 
-    always @(posedge clk) begin
-
-        if (tick) begin
-
-            $display(
-                "[TIME=%0t] subphase=%0d | scl=%0b | sample=%0b",
-                $time,
-                debug_subphase,
-                scl_internal,
-                sample_pulse
-            );
-
-        end
-    end
-
-    // ============================================================
-    // SIMULATION END
-    // ============================================================
-
-    initial begin
-
-        #1000;
-
-        $display("\n==================================");
-        $display("PHASE ENGINE SIMULATION COMPLETE");
-        $display("==================================\n");
-
-        $finish;
-
-    end
+    assign debug_subphase = subphase;
 
 endmodule
