@@ -82,4 +82,4 @@ module i2c_line_ctrl (
     assign sda_in = sda;
     assign scl_in = scl;
 
-endmodule
+endmodule 
