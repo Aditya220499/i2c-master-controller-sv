@@ -9,25 +9,18 @@ module stop_gen_tb;
     logic stop_enable;
 
     // ============================================================
-    // BUS WIRES
-    // ============================================================
-
-    wire sda;
-    wire scl;
-
-    // ============================================================
-    // BUS OBSERVATION
-    // ============================================================
-
-    logic sda_in;
-    logic scl_in;
-
-    // ============================================================
     // DRIVE CONTROL
     // ============================================================
 
     logic sda_drive_low;
     logic scl_drive_low;
+
+    // ============================================================
+    // BUS WIRES
+    // ============================================================
+
+    wire sda;
+    wire scl;
 
     // ============================================================
     // PULL-UP RESISTORS
@@ -44,47 +37,22 @@ module stop_gen_tb;
 
         .stop_enable    (stop_enable),
 
-        .scl_in         (scl_in),
-        .sda_in         (sda_in),
-
         .sda_drive_low  (sda_drive_low),
         .scl_drive_low  (scl_drive_low)
 
     );
 
     // ============================================================
-    // OPEN-DRAIN BUS MODEL
-    // ============================================================
-
-    assign sda = (sda_drive_low) ? 1'b0 : 1'bz;
-    assign scl = (scl_drive_low) ? 1'b0 : 1'bz;
-
-    // ============================================================
-    // OBSERVE BUS
-    // ============================================================
-
-    assign sda_in = sda;
-    assign scl_in = scl;
-
-    // ============================================================
-    // INITIAL BUS STATE
+    // FORCE SDA LOW INITIALLY
     // ------------------------------------------------------------
-    // Create:
-    // SDA LOW
-    // SCL HIGH
-    //
-    // so STOP can occur.
+    // Creates pre-STOP condition.
     // ============================================================
 
-    initial begin
+    assign sda = (sda_drive_low) ? 1'b0 :
+                 (stop_enable)   ? 1'bz :
+                                   1'b0;
 
-        force sda = 1'b0;
-
-        #30;
-
-        release sda;
-
-    end
+    assign scl = (scl_drive_low) ? 1'b0 : 1'bz;
 
     // ============================================================
     // TEST SEQUENCE
@@ -92,9 +60,9 @@ module stop_gen_tb;
 
     initial begin
 
-        $display("\n======================================");
-        $display("STOP CONDITION GENERATION TEST");
-        $display("======================================\n");
+        $display("\n=================================");
+        $display("STOP GENERATION TEST");
+        $display("=================================\n");
 
         stop_enable = 0;
 
@@ -112,9 +80,9 @@ module stop_gen_tb;
 
         #50;
 
-        $display("\n======================================");
+        $display("\n=================================");
         $display("SIMULATION COMPLETE");
-        $display("======================================\n");
+        $display("=================================\n");
 
         $finish;
 
