@@ -3,24 +3,13 @@
 module start_gen (
 
     // ============================================================
-    // CONTROL
+    // START REQUEST
     // ============================================================
 
     input logic start_enable,
 
     // ============================================================
-    // CURRENT BUS STATE
-    // ------------------------------------------------------------
-    // Observed bus values
-    // ============================================================
-
-    input logic scl_in,
-    input logic sda_in,
-
-    // ============================================================
     // OUTPUT DRIVE CONTROL
-    // ------------------------------------------------------------
-    // Drives connected to line controller
     // ============================================================
 
     output logic sda_drive_low,
@@ -29,32 +18,34 @@ module start_gen (
 );
 
     // ============================================================
-    // DEFAULT BEHAVIOR
+    // START GENERATION
     // ------------------------------------------------------------
-    // Keep both lines released unless START requested.
+    // START condition:
+    //
+    // SDA transitions HIGH -> LOW
+    // while SCL remains HIGH
+    //
+    // IMPORTANT:
+    // This block ONLY controls bus drive intent.
+    //
+    // Protocol legality checking belongs elsewhere.
     // ============================================================
 
     always_comb begin
 
         // ========================================================
         // DEFAULT:
-        // release lines
+        // release both lines
         // ========================================================
 
         sda_drive_low = 1'b0;
         scl_drive_low = 1'b0;
 
         // ========================================================
-        // START CONDITION
-        // --------------------------------------------------------
-        // START:
-        // SDA HIGH -> LOW
-        // while SCL HIGH
+        // GENERATE START
         // ========================================================
 
-        if (start_enable &&
-            scl_in &&
-            sda_in) begin
+        if (start_enable) begin
 
             // Keep SCL released HIGH
 
