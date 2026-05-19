@@ -3,17 +3,10 @@
 module stop_gen (
 
     // ============================================================
-    // CONTROL
+    // STOP REQUEST
     // ============================================================
 
     input logic stop_enable,
-
-    // ============================================================
-    // OBSERVED BUS VALUES
-    // ============================================================
-
-    input logic scl_in,
-    input logic sda_in,
 
     // ============================================================
     // OUTPUT DRIVE CONTROL
@@ -26,6 +19,17 @@ module stop_gen (
 
     // ============================================================
     // STOP GENERATION
+    // ------------------------------------------------------------
+    // STOP condition:
+    //
+    // SDA transitions LOW -> HIGH
+    // while SCL remains HIGH
+    //
+    // IMPORTANT:
+    // We do NOT drive SDA HIGH.
+    //
+    // We RELEASE SDA.
+    // Pull-up resistor restores HIGH.
     // ============================================================
 
     always_comb begin
@@ -39,24 +43,12 @@ module stop_gen (
         scl_drive_low = 1'b0;
 
         // ========================================================
-        // STOP CONDITION
-        // --------------------------------------------------------
-        // STOP:
-        // SDA LOW -> HIGH
-        // while SCL HIGH
-        //
-        // IMPORTANT:
-        // We do NOT drive HIGH.
-        //
-        // We RELEASE SDA,
-        // then pull-up resistor raises line HIGH.
+        // GENERATE STOP
         // ========================================================
 
-        if (stop_enable &&
-            scl_in &&
-            !sda_in) begin
+        if (stop_enable) begin
 
-            // Keep SCL HIGH
+            // Keep SCL released HIGH
 
             scl_drive_low = 1'b0;
 
