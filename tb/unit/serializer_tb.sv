@@ -102,6 +102,7 @@ module serializer_tb;
         load = 1;
 
         @(posedge clk);
+        @(posedge clk);
 
         load = 0;
 
