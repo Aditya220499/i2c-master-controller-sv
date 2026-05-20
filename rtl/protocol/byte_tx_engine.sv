@@ -5,109 +5,139 @@ module byte_tx_engine (
     input logic clk,
     input logic rst_n,
 
-    // ============================================================
-    // TRANSMIT CONTROL
-    // ============================================================
-
     input logic tx_start,
-
-    // ============================================================
-    // TIMING INPUTS
-    // ============================================================
 
     input logic scl_low_phase,
     input logic scl_high_phase,
 
     // ============================================================
-    // SERIALIZER STATUS
+    // DATA BYTE FINISHED
+    // ------------------------------------------------------------
+    // Indicates:
+    // 8 data bits completed
     // ============================================================
 
     input logic byte_done,
 
     // ============================================================
-    // OUTPUT CONTROL
+    // ACK RESULT
     // ============================================================
+
+    input logic ack_received,
 
     output logic load,
     output logic shift_enable,
 
-    output logic tx_active
+    output logic tx_active,
+
+    // ============================================================
+    // ACK PHASE INDICATOR
+    // ============================================================
+
+    output logic ack_phase
 
 );
 
-    // ============================================================
-    // INTERNAL SHIFT TRACKING
-    // ============================================================
+    typedef enum logic [1:0] {
 
-    logic shifting;
+        IDLE,
+        DATA_TX,
+        ACK_WAIT
 
-    // ============================================================
-    // BYTE TRANSMIT CONTROL
-    // ============================================================
+    } state_t;
+
+    state_t state;
 
     always_ff @(posedge clk or negedge rst_n) begin
 
         if (!rst_n) begin
 
-            load         <= 1'b0;
-            shift_enable <= 1'b0;
+            load         <= 0;
+            shift_enable <= 0;
 
-            tx_active    <= 1'b0;
+            tx_active    <= 0;
 
-            shifting     <= 1'b0;
+            ack_phase    <= 0;
+
+            state        <= IDLE;
 
         end
         else begin
 
             // ====================================================
-            // DEFAULT PULSES LOW
+            // DEFAULT PULSES
             // ====================================================
 
-            load         <= 1'b0;
-            shift_enable <= 1'b0;
+            load         <= 0;
+            shift_enable <= 0;
 
-            // ====================================================
-            // START BYTE TRANSMISSION
-            // ====================================================
-
-            if (tx_start && !tx_active) begin
-
-                load      <= 1'b1;
-
-                tx_active <= 1'b1;
-
-                shifting  <= 1'b1;
-
-            end
-
-            // ====================================================
-            // ACTIVE BYTE TRANSMISSION
-            // ====================================================
-
-            else if (shifting) begin
+            case(state)
 
                 // ================================================
-                // SHIFT ONLY DURING LOW PHASE
+                // IDLE
                 // ================================================
 
-                if (scl_low_phase) begin
+                IDLE: begin
 
-                    shift_enable <= 1'b1;
+                    tx_active <= 0;
 
+                    ack_phase <= 0;
+
+                    if(tx_start) begin
+
+                        load      <= 1;
+
+                        tx_active <= 1;
+
+                        state     <= DATA_TX;
+
+                    end
                 end
 
                 // ================================================
-                // BYTE COMPLETE
+                // DATA TRANSMISSION
                 // ================================================
 
-                if (byte_done) begin
+                DATA_TX: begin
 
-                    tx_active <= 1'b0;
+                    if(scl_low_phase)
+                        shift_enable <= 1;
 
-                    shifting  <= 1'b0;
+                    // ============================================
+                    // ENTER ACK PHASE
+                    // ============================================
 
+                    if(byte_done) begin
+
+                        ack_phase <= 1;
+
+                        state <= ACK_WAIT;
+
+                    end
                 end
-            end
+
+                // ================================================
+                // ACK PHASE
+                // ================================================
+
+                ACK_WAIT: begin
+
+                    // ============================================
+                    // Wait for ACK sampling
+                    // ============================================
+
+                    if(scl_high_phase) begin
+
+                        tx_active <= 0;
+
+                        ack_phase <= 0;
+
+                        state <= IDLE;
+
+                    end
+                end
+
+            endcase
         end
     end
 
