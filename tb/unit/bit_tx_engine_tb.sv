@@ -10,11 +10,12 @@ module bit_tx_engine_tb;
     logic rst_n;
 
     // ============================================================
-    // PHASE CONTROL
+    // PHASE SIGNALS
     // ============================================================
 
     logic scl_low_phase;
     logic scl_high_phase;
+
     logic sample_pulse;
 
     // ============================================================
@@ -24,7 +25,7 @@ module bit_tx_engine_tb;
     logic serial_bit;
 
     // ============================================================
-    // OUTPUT
+    // DUT OUTPUT
     // ============================================================
 
     logic sda_drive_low;
@@ -40,6 +41,7 @@ module bit_tx_engine_tb;
 
         .scl_low_phase  (scl_low_phase),
         .scl_high_phase (scl_high_phase),
+
         .sample_pulse   (sample_pulse),
 
         .serial_bit     (serial_bit),
@@ -49,7 +51,7 @@ module bit_tx_engine_tb;
     );
 
     // ============================================================
-    // CLOCK
+    // CLOCK GENERATION
     // ============================================================
 
     initial begin
@@ -75,13 +77,93 @@ module bit_tx_engine_tb;
     end
 
     // ============================================================
+    // TASK:
+    // SEND SINGLE BIT TIMING
+    // ============================================================
+
+    task send_bit(input logic bit_value);
+
+        begin
+
+            // ====================================================
+            // LOW PHASE
+            //
+            // SDA allowed to change here
+            // ====================================================
+
+            @(negedge clk);
+
+            scl_low_phase  = 1'b1;
+            scl_high_phase = 1'b0;
+
+            sample_pulse   = 1'b0;
+
+            // Prepare next bit
+
+            serial_bit = bit_value;
+
+            // Hold LOW phase
+
+            repeat(2) @(posedge clk);
+
+            // ====================================================
+            // HIGH PHASE
+            //
+            // SDA must remain stable
+            // ====================================================
+
+            @(negedge clk);
+
+            scl_low_phase  = 1'b0;
+            scl_high_phase = 1'b1;
+
+            // Hold HIGH phase before sampling
+
+            repeat(2) @(posedge clk);
+
+            // ====================================================
+            // SAMPLE EVENT
+            //
+            // Receiver samples SDA here
+            // ====================================================
+
+            @(negedge clk);
+
+            sample_pulse = 1'b1;
+
+            @(posedge clk);
+
+            @(negedge clk);
+
+            sample_pulse = 1'b0;
+
+            // Hold HIGH after sample
+
+            repeat(2) @(posedge clk);
+
+            // End HIGH phase
+
+            @(negedge clk);
+
+            scl_high_phase = 1'b0;
+
+        end
+
+    endtask
+
+    // ============================================================
     // TEST SEQUENCE
     // ============================================================
 
     initial begin
 
+        // ========================================================
+        // INITIAL CONDITIONS
+        // ========================================================
+
         scl_low_phase  = 0;
         scl_high_phase = 0;
+
         sample_pulse   = 0;
 
         serial_bit     = 1'b1;
@@ -92,56 +174,24 @@ module bit_tx_engine_tb;
         // SEND BIT = 1
         // ========================================================
 
-        @(negedge clk);
-
-        scl_low_phase = 1;
-
-        serial_bit = 1'b1;
-
-        @(posedge clk);
-
-        scl_low_phase = 0;
-        scl_high_phase = 1;
-
-        #20;
-
-        sample_pulse = 1;
-
-        #10;
-
-        sample_pulse = 0;
-
-        scl_high_phase = 0;
+        send_bit(1'b1);
 
         // ========================================================
         // SEND BIT = 0
         // ========================================================
 
-        @(negedge clk);
+        send_bit(1'b0);
 
-        scl_low_phase = 1;
+        // ========================================================
+        // SEND BIT = 1
+        // ========================================================
 
-        serial_bit = 1'b0;
-
-        @(posedge clk);
-
-        scl_low_phase = 0;
-        scl_high_phase = 1;
-
-        #20;
-
-        sample_pulse = 1;
-
-        #10;
-
-        sample_pulse = 0;
-
-        scl_high_phase = 0;
+        send_bit(1'b1);
 
         #50;
 
         $display("\n=================================");
-        $display("BIT TRANSMIT TEST COMPLETE");
+        $display("BIT TX ENGINE TEST COMPLETE");
         $display("=================================\n");
 
         $finish;
