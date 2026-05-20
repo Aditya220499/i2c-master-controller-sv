@@ -29,13 +29,21 @@ module byte_tx_engine_tb;
     logic byte_done;
 
     // ============================================================
-    // OUTPUTS
+    // ACK STATUS
+    // ============================================================
+
+    logic ack_received;
+
+    // ============================================================
+    // DUT OUTPUTS
     // ============================================================
 
     logic load;
     logic shift_enable;
 
     logic tx_active;
+
+    logic ack_phase;
 
     // ============================================================
     // DUT
@@ -53,10 +61,14 @@ module byte_tx_engine_tb;
 
         .byte_done      (byte_done),
 
+        .ack_received   (ack_received),
+
         .load           (load),
         .shift_enable   (shift_enable),
 
-        .tx_active      (tx_active)
+        .tx_active      (tx_active),
+
+        .ack_phase      (ack_phase)
 
     );
 
@@ -87,7 +99,42 @@ module byte_tx_engine_tb;
     end
 
     // ============================================================
-    // TEST SEQUENCE
+    // TASK:
+    // GENERATE ONE CLOCK BIT PERIOD
+    // ============================================================
+
+    task bit_period;
+
+        begin
+
+            // LOW PHASE
+
+            @(negedge clk);
+
+            scl_low_phase = 1;
+            scl_high_phase = 0;
+
+            repeat(2) @(posedge clk);
+
+            // HIGH PHASE
+
+            @(negedge clk);
+
+            scl_low_phase = 0;
+            scl_high_phase = 1;
+
+            repeat(2) @(posedge clk);
+
+            @(negedge clk);
+
+            scl_high_phase = 0;
+
+        end
+
+    endtask
+
+    // ============================================================
+    // TEST
     // ============================================================
 
     initial begin
@@ -99,10 +146,12 @@ module byte_tx_engine_tb;
 
         byte_done      = 0;
 
+        ack_received   = 0;
+
         wait(rst_n);
 
         // ========================================================
-        // START BYTE TRANSMISSION
+        // START TX
         // ========================================================
 
         @(negedge clk);
@@ -116,35 +165,17 @@ module byte_tx_engine_tb;
         tx_start = 0;
 
         // ========================================================
-        // GENERATE BIT PHASES
+        // 8 DATA BIT PERIODS
         // ========================================================
 
         repeat(8) begin
 
-            // LOW phase
-
-            @(negedge clk);
-
-            scl_low_phase = 1;
-
-            @(posedge clk);
-
-            @(negedge clk);
-
-            scl_low_phase = 0;
-
-            // HIGH phase
-
-            scl_high_phase = 1;
-
-            #20;
-
-            scl_high_phase = 0;
+            bit_period();
 
         end
 
         // ========================================================
-        // BYTE COMPLETE
+        // DATA BYTE COMPLETE
         // ========================================================
 
         @(negedge clk);
@@ -157,10 +188,30 @@ module byte_tx_engine_tb;
 
         byte_done = 0;
 
+        // ========================================================
+        // ACK CLOCK (9th CLOCK)
+        // ========================================================
+
+        bit_period();
+
+        // ========================================================
+        // ACK RECEIVED
+        // ========================================================
+
+        @(negedge clk);
+
+        ack_received = 1;
+
+        @(posedge clk);
+
+        @(negedge clk);
+
+        ack_received = 0;
+
         #50;
 
         $display("\n=================================");
-        $display("BYTE TX ENGINE TEST COMPLETE");
+        $display("BYTE TX ENGINE TB COMPLETE");
         $display("=================================\n");
 
         $finish;
