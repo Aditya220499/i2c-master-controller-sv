@@ -98,6 +98,88 @@ STEP 14
 
 Send full byte.
 
+********************************************************************************************************************************
+Create a git version
+      v0.1_protocol_foundation
+
+commit message - 
+Completed foundational I2C TX architecture:
+- timing engine
+- phase engine
+- open-drain line controller
+- serializer
+- bit transmit engine
+- byte transmit engine
+- START/STOP generation
+- unit testbenches
+
+how to commit -
+git tag v0.1_protocol_foundation
+git push origin v0.1_protocol_foundation
+
+STEP 1
+Create Git Checkpoint
+
+Tag:
+
+v0.1_protocol_foundation
+
+VERY important.
+
+STEP 2
+Modify byte_tx_engine
+
+Add:
+
+ACK phase
+ACK timing
+9th clock behavior
+STEP 3
+Modify bit_tx_engine
+
+Add:
+
+if (ack_phase)
+    release SDA
+
+VERY important.
+
+STEP 4
+Create ack_handler.sv
+
+Implements:
+
+ACK sample logic
+ACK/NACK result
+STEP 5
+Create ack_handler_tb.sv
+
+Verify:
+
+ACK
+NACK
+sample timing
+STEP 6
+Update byte_tx_engine_tb
+
+Now:
+TB must:
+
+emulate slave ACK
+pull SDA LOW during ACK phase
+
+VERY important.
+
+STEP 7
+Re-run ALL impacted TBs
+
+This is:
+
+regression verification.
+
+Professional methodology.
+
+************************************************************************************************************************************
 STEP 15
 
 ACK handling.
