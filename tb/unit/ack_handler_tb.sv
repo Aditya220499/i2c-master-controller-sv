@@ -63,6 +63,8 @@ module ack_handler_tb;
 
         sda_in = 0;
 
+        @(posedge clk);
+
         sample_pulse = 1;
 
         @(posedge clk);
@@ -80,6 +82,8 @@ module ack_handler_tb;
         sda_in = 1;
 
         sample_pulse = 1;
+
+        @(posedge clk);
 
         @(posedge clk);
 
