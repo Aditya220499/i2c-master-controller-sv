@@ -5,33 +5,47 @@ module byte_tx_engine (
     input logic clk,
     input logic rst_n,
 
+    // ============================================================
+    // TRANSACTION START
+    // ============================================================
+
     input logic tx_start,
+
+    // ============================================================
+    // PHASE INPUTS
+    // ============================================================
 
     input logic scl_low_phase,
     input logic scl_high_phase,
+    input logic sample_pulse,
 
     // ============================================================
-    // DATA BYTE FINISHED
-    // ------------------------------------------------------------
-    // Indicates:
-    // 8 data bits completed
+    // SERIALIZER STATUS
     // ============================================================
 
     input logic byte_done,
 
     // ============================================================
-    // ACK RESULT
+    // ACK STATUS
     // ============================================================
 
     input logic ack_received,
 
+    // ============================================================
+    // SERIALIZER CONTROL
+    // ============================================================
+
     output logic load,
     output logic shift_enable,
+
+    // ============================================================
+    // STATUS
+    // ============================================================
 
     output logic tx_active,
 
     // ============================================================
-    // ACK PHASE INDICATOR
+    // ACK CONTROL
     // ============================================================
 
     output logic ack_phase
@@ -42,7 +56,8 @@ module byte_tx_engine (
 
         IDLE,
         DATA_TX,
-        ACK_WAIT
+        ACK_PHASE,
+        COMPLETE
 
     } state_t;
 
@@ -50,7 +65,7 @@ module byte_tx_engine (
 
     always_ff @(posedge clk or negedge rst_n) begin
 
-        if (!rst_n) begin
+        if(!rst_n) begin
 
             load         <= 0;
             shift_enable <= 0;
@@ -80,7 +95,6 @@ module byte_tx_engine (
                 IDLE: begin
 
                     tx_active <= 0;
-
                     ack_phase <= 0;
 
                     if(tx_start) begin
@@ -95,7 +109,7 @@ module byte_tx_engine (
                 end
 
                 // ================================================
-                // DATA TRANSMISSION
+                // SEND 8 DATA BITS
                 // ================================================
 
                 DATA_TX: begin
@@ -104,37 +118,47 @@ module byte_tx_engine (
                         shift_enable <= 1;
 
                     // ============================================
-                    // ENTER ACK PHASE
+                    // BYTE COMPLETE
                     // ============================================
 
                     if(byte_done) begin
 
                         ack_phase <= 1;
 
-                        state <= ACK_WAIT;
+                        state <= ACK_PHASE;
 
                     end
                 end
 
                 // ================================================
-                // ACK PHASE
+                // ACK CLOCK
                 // ================================================
 
-                ACK_WAIT: begin
+                ACK_PHASE: begin
 
                     // ============================================
-                    // Wait for ACK sampling
+                    // Wait for ACK sample point
                     // ============================================
 
-                    if(scl_high_phase) begin
+                    if(sample_pulse) begin
 
-                        tx_active <= 0;
-
-                        ack_phase <= 0;
-
-                        state <= IDLE;
+                        state <= COMPLETE;
 
                     end
+                end
+
+                // ================================================
+                // COMPLETE
+                // ================================================
+
+                COMPLETE: begin
+
+                    tx_active <= 0;
+
+                    ack_phase <= 0;
+
+                    state <= IDLE;
+
                 end
 
             endcase
