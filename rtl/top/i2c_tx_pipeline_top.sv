@@ -89,7 +89,7 @@ module i2c_tx_pipeline_top (
     // CLOCK ENABLE GENERATOR
     // ============================================================
 
-    clock_enable_generator clk_gen (
+    clock_enable_gen clk_gen (
 
         .clk    (clk),
         .rst_n  (rst_n),
