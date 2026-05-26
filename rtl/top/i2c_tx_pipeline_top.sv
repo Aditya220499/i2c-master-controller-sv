@@ -46,6 +46,8 @@ module i2c_tx_pipeline_top (
     logic scl_low_phase;
     logic scl_high_phase;
 
+    logic low_phase_start;
+
     logic sample_pulse;
 
     logic load;
@@ -111,6 +113,8 @@ module i2c_tx_pipeline_top (
 
         .scl_low_phase  (scl_low_phase),
         .scl_high_phase (scl_high_phase),
+
+        .low_phase_start (low_phase_start),
 
         .sample_pulse   (sample_pulse)
 
@@ -190,6 +194,8 @@ module i2c_tx_pipeline_top (
 
         .scl_low_phase  (scl_low_phase),
         .scl_high_phase (scl_high_phase),
+
+        .low_phase_start (low_phase_start),
 
         .sample_pulse   (sample_pulse),
 
