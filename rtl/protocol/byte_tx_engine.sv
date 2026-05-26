@@ -17,6 +17,9 @@ module byte_tx_engine (
 
     input logic scl_low_phase,
     input logic scl_high_phase,
+
+    input logic low_phase_start,
+
     input logic sample_pulse,
 
     // ============================================================
@@ -114,7 +117,7 @@ module byte_tx_engine (
 
                 DATA_TX: begin
 
-                    if(scl_low_phase)
+                    if(low_phase_start)
                         shift_enable <= 1;
 
                     // ============================================
