@@ -22,6 +22,9 @@ module phase_engine (
     output logic scl_low_phase,
     output logic scl_high_phase,
 
+    output logic low_phase_start,
+    output logic high_phase_start,
+
     // ============================================================
     // EVENT PULSES
     // ------------------------------------------------------------
@@ -92,6 +95,9 @@ module phase_engine (
         scl_low_phase  = 1'b0;
         scl_high_phase = 1'b0;
 
+        low_phase_start  = 1'b0;
+        high_phase_start = 1'b0;
+
         sample_pulse   = 1'b0;
 
         // ========================================================
@@ -106,6 +112,13 @@ module phase_engine (
 
             scl_low_phase = 1'b1;
 
+        // ====================================================
+        // LOW PHASE ENTRY PULSE
+        // ====================================================
+
+             if(subphase == 3'd0)
+                  low_phase_start = 1'b1;
+
         end
 
         // ========================================================
@@ -117,6 +130,13 @@ module phase_engine (
             scl_internal   = 1'b1;
 
             scl_high_phase = 1'b1;
+
+        // ====================================================
+        // HIGH PHASE ENTRY PULSE
+        // ====================================================
+
+            if(subphase == 3'd2)
+              high_phase_start = 1'b1;
 
         end
 
