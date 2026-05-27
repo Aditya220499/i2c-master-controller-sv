@@ -7,8 +7,6 @@ module phase_engine (
 
     // ============================================================
     // TICK INPUT
-    // ------------------------------------------------------------
-    // Timing advances only on tick pulse
     // ============================================================
 
     input  logic tick,
@@ -27,8 +25,6 @@ module phase_engine (
 
     // ============================================================
     // EVENT PULSES
-    // ------------------------------------------------------------
-    // These are INTERNAL timing events
     // ============================================================
 
     output logic sample_pulse,
@@ -43,15 +39,6 @@ module phase_engine (
 
     // ============================================================
     // SUBPHASE COUNTER
-    //
-    // Timing sequence:
-    //
-    // 0 -> LOW begin
-    // 1 -> LOW hold
-    // 2 -> HIGH begin
-    // 3 -> SAMPLE point
-    // 4 -> HIGH hold
-    // 5 -> return LOW
     // ============================================================
 
     logic [2:0] subphase;
@@ -81,7 +68,9 @@ module phase_engine (
     end
 
     // ============================================================
-    // OUTPUT GENERATION
+    // COMBINATIONAL PHASE LEVELS
+    // ------------------------------------------------------------
+    // ONLY level signals here
     // ============================================================
 
     always_comb begin
@@ -94,9 +83,6 @@ module phase_engine (
 
         scl_low_phase  = 1'b0;
         scl_high_phase = 1'b0;
-
-        low_phase_start  = 1'b0;
-        high_phase_start = 1'b0;
 
         sample_pulse   = 1'b0;
 
@@ -112,13 +98,6 @@ module phase_engine (
 
             scl_low_phase = 1'b1;
 
-        // ====================================================
-        // LOW PHASE ENTRY PULSE
-        // ====================================================
-
-             if(subphase == 3'd0)
-                  low_phase_start = 1'b1;
-
         end
 
         // ========================================================
@@ -131,25 +110,65 @@ module phase_engine (
 
             scl_high_phase = 1'b1;
 
-        // ====================================================
-        // HIGH PHASE ENTRY PULSE
-        // ====================================================
-
-            if(subphase == 3'd2)
-              high_phase_start = 1'b1;
-
         end
 
         // ========================================================
-        // SAMPLE EVENT
-        // --------------------------------------------------------
-        // SAMPLE occurs INSIDE HIGH region
+        // SAMPLE POINT
         // ========================================================
 
         if (subphase == 3'd3) begin
 
             sample_pulse = 1'b1;
 
+        end
+    end
+
+    // ============================================================
+    // REGISTERED EVENT PULSES
+    // ------------------------------------------------------------
+    // CLEAN SYNCHRONOUS ONE-SHOT EVENTS
+    // ============================================================
+
+    always_ff @(posedge clk or negedge rst_n) begin
+
+        if(!rst_n) begin
+
+            low_phase_start  <= 1'b0;
+            high_phase_start <= 1'b0;
+
+        end
+        else begin
+
+            // ====================================================
+            // DEFAULT
+            // ====================================================
+
+            low_phase_start  <= 1'b0;
+            high_phase_start <= 1'b0;
+
+            // ====================================================
+            // GENERATE CLEAN EVENT PULSES
+            // ====================================================
+
+            if(tick) begin
+
+                // ================================================
+                // ENTER LOW PHASE
+                // 5 -> 0
+                // ================================================
+
+                if(subphase == 3'd5)
+                    low_phase_start <= 1'b1;
+
+                // ================================================
+                // ENTER HIGH PHASE
+                // 1 -> 2
+                // ================================================
+
+                if(subphase == 3'd1)
+                    high_phase_start <= 1'b1;
+
+            end
         end
     end
 
