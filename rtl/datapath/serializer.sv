@@ -7,16 +7,12 @@ module serializer (
 
     // ============================================================
     // LOAD CONTROL
-    // ------------------------------------------------------------
-    // Loads new transmit byte into serializer.
     // ============================================================
 
     input  logic       load,
 
     // ============================================================
     // SHIFT CONTROL
-    // ------------------------------------------------------------
-    // Advances serializer by one bit.
     // ============================================================
 
     input  logic       shift_enable,
@@ -28,17 +24,13 @@ module serializer (
     input  logic [7:0] tx_data,
 
     // ============================================================
-    // CURRENT SERIAL OUTPUT BIT
-    // ------------------------------------------------------------
-    // MSB-first serialization.
+    // SERIAL OUTPUT
     // ============================================================
 
     output logic       serial_bit,
 
     // ============================================================
     // BYTE COMPLETE
-    // ------------------------------------------------------------
-    // Asserted after final bit shifted.
     // ============================================================
 
     output logic       byte_done,
@@ -48,21 +40,17 @@ module serializer (
     // ============================================================
 
     output logic [7:0] debug_shift_reg,
-    output logic [2:0] debug_bit_count
+    output logic [3:0] debug_bit_count
 
 );
 
     // ============================================================
-    // SHIFT REGISTER
+    // INTERNALS
     // ============================================================
 
     logic [7:0] shift_reg;
 
-    // ============================================================
-    // BIT COUNTER
-    // ============================================================
-
-    logic [2:0] bit_count;
+    logic [3:0] bit_count;
 
     // ============================================================
     // SERIALIZER LOGIC
@@ -74,7 +62,7 @@ module serializer (
 
             shift_reg <= 8'h00;
 
-            bit_count <= 3'd0;
+            bit_count <= 4'd0;
 
             byte_done <= 1'b0;
 
@@ -95,7 +83,7 @@ module serializer (
 
                 shift_reg <= tx_data;
 
-                bit_count <= 3'd7;
+                bit_count <= 4'd8;
 
             end
 
@@ -103,12 +91,10 @@ module serializer (
             // SHIFT OPERATION
             // ====================================================
 
-            else if (shift_enable) begin
+            else if (shift_enable && bit_count != 0) begin
 
                 // ================================================
-                // Shift LEFT
-                //
-                // Next bit moves into MSB position.
+                // SHIFT REGISTER
                 // ================================================
 
                 shift_reg <= {
@@ -117,27 +103,27 @@ module serializer (
                 };
 
                 // ================================================
-                // BIT TRACKING
+                // FINAL BIT SHIFT
                 // ================================================
 
-                if (bit_count == 3'd0) begin
+                if (bit_count == 4'd1) begin
 
                     byte_done <= 1'b1;
 
                 end
-                else begin
 
-                    bit_count <= bit_count - 1'b1;
+                // ================================================
+                // DECREMENT COUNTER
+                // ================================================
 
-                end
+                bit_count <= bit_count - 1'b1;
+
             end
         end
     end
 
     // ============================================================
-    // SERIAL OUTPUT BIT
-    // ------------------------------------------------------------
-    // Always transmit current MSB.
+    // SERIAL OUTPUT
     // ============================================================
 
     assign serial_bit = shift_reg[7];
