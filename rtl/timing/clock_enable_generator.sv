@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 
-module clock_enable_generator #(
+module clock_enable_gen #(
 
-    parameter DIVIDE_COUNT = 4
+    parameter DIVIDE_COUNT = 2
 
 )(
 
