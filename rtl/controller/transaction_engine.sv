@@ -1,4 +1,4 @@
-```systemverilog
+
 `timescale 1ns/1ps
 
 module transaction_engine (
@@ -276,4 +276,4 @@ module transaction_engine (
     assign debug_state = current_state;
 
 endmodule
-```
+
